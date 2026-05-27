@@ -7,4 +7,4 @@ This section covers administration tasks you need to perform in WSO2 API Manager
 - [Multitenancy]({{base_path}}/administer/multitenancy/introduction-to-multitenancy)
 - [Key Managers]({{base_path}}/administer/key-managers/overview)
 - [Advanced Configurations]({{base_path}}/administer/advanced-configurations)
-- [Outbound Request Security]({{base_path}}/administer/outbound-request-security)
+- [Network Security Access Control]({{base_path}}/administer/network-security-access-control)

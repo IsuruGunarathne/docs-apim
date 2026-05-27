@@ -17244,7 +17244,7 @@ same_site_cookies = "lax"
 
 
 
-## Outbound Request Security
+## Network Security Access Control
 
 
 <div class="mb-config-catalog">
@@ -17256,43 +17256,22 @@ same_site_cookies = "lax"
                 <label class="tab-selector" for="_tab_118"><i class="icon fa fa-code"></i></label>
                 <div class="superfences-content">
                     <div class="mb-config-example">
-<pre><code class="toml">[apim.outbound_request_security]
-enabled = false
-mode = "allow_all"
-exceptions = []
-block_private_network_access = false</code></pre>
+<pre><code class="toml">[apim.network_security.access_control]
+mode = "allow"
+hosts = ["api.github.com", "*.wso2.com"]
+block_private_network_access = true</code></pre>
                     </div>
                 </div>
                 <div class="doc-wrapper">
                     <div class="mb-config">
                         <div class="config-wrap">
-                            <code>[apim.outbound_request_security]</code>
+                            <code>[apim.network_security.access_control]</code>
                             <p>
-                                This includes configurations for protecting WSO2 API Manager against Server-Side Request Forgery (SSRF) attacks by validating outbound requests at the platform level. These settings apply globally across all tenants.
+                                This includes configurations for protecting WSO2 API Manager against Server-Side Request Forgery (SSRF) attacks by validating outbound requests at the platform level. These settings apply globally across all tenants. Validation is active only when this configuration block is explicitly present in <code>deployment.toml</code>.
                             </p>
                         </div>
                         <div class="params-wrap">
                             <div class="param">
-                                <div class="param-name">
-                                  <span class="param-name-wrap"> <code>enabled</code> </span>
-                                </div>
-                                <div class="param-info">
-                                    <div>
-                                        <p>
-                                            <span class="param-type string"> boolean </span>
-                                        </p>
-                                        <div class="param-default">
-                                            <span class="param-default-value">Default: <code>false</code></span>
-                                        </div>
-                                        <div class="param-possible">
-                                            <span class="param-possible-values">Possible Values: <code>true, false</code></span>
-                                        </div>
-                                    </div>
-                                    <div class="param-description">
-                                        <p>Enables or disables platform-level outbound request validation. If this configuration block is not defined, platform-level validation is skipped entirely.</p>
-                                    </div>
-                                </div>
-                            </div><div class="param">
                                 <div class="param-name">
                                   <span class="param-name-wrap"> <code>mode</code> </span>
                                 </div>
@@ -17301,20 +17280,17 @@ block_private_network_access = false</code></pre>
                                         <p>
                                             <span class="param-type string"> string </span>
                                         </p>
-                                        <div class="param-default">
-                                            <span class="param-default-value">Default: <code>allow_all</code></span>
-                                        </div>
                                         <div class="param-possible">
-                                            <span class="param-possible-values">Possible Values: <code>allow_all, deny_all</code></span>
+                                            <span class="param-possible-values">Possible Values: <code>allow, deny</code></span>
                                         </div>
                                     </div>
                                     <div class="param-description">
-                                        <p>Determines the base behavior for outbound request filtering. When set to <code>allow_all</code>, all outbound requests are permitted except those matching patterns in <code>exceptions</code> (denylist mode). When set to <code>deny_all</code>, all outbound requests are blocked except those matching patterns in <code>exceptions</code> (allowlist mode).</p>
+                                        <p>Determines the base filtering behavior. `allow`: only hosts whose hostname or resolved IP matches the `hosts` list are permitted; all others are blocked. `deny`: hosts whose hostname or resolved IP matches the `hosts` list are blocked; all others are allowed (subject to `block_private_network_access`). If absent or blank, the `hosts` list is ignored and only `block_private_network_access` is applied.</p>
                                     </div>
                                 </div>
                             </div><div class="param">
                                 <div class="param-name">
-                                  <span class="param-name-wrap"> <code>exceptions</code> </span>
+                                  <span class="param-name-wrap"> <code>hosts</code> </span>
                                 </div>
                                 <div class="param-info">
                                     <div>
@@ -17326,7 +17302,7 @@ block_private_network_access = false</code></pre>
                                         </div>
                                     </div>
                                     <div class="param-description">
-                                        <p>A list of host patterns used to override the base <code>mode</code>. Supports simple wildcard matching against the hostname only (e.g., <code>*.example.com</code>, <code>api.*.com</code>). Matching is case-insensitive. Acts as a denylist when <code>mode = allow_all</code> and as an allowlist when <code>mode = deny_all</code>.</p>
+                                        <p>List of host patterns matched against the hostname in the request URL. If the hostname does not match, DNS is resolved and the resulting IPs are also checked against this list. Supports wildcard matching (e.g., `*.example.com`). Behavior depends on `mode`.</p>
                                     </div>
                                 </div>
                             </div><div class="param">
@@ -17346,7 +17322,7 @@ block_private_network_access = false</code></pre>
                                         </div>
                                     </div>
                                     <div class="param-description">
-                                        <p>When enabled, blocks outbound requests whose resolved IP address falls within a private or internal network range (e.g., <code>127.0.0.1</code>, <code>10.x.x.x</code>, <code>172.16.x.x–172.31.x.x</code>, <code>192.168.x.x</code>, <code>169.254.x.x</code>). This check is only applicable when <code>enabled = true</code> and is applied after the request passes the <code>mode</code> and <code>exceptions</code> validation. DNS resolution is performed before this check; if resolution fails, this step is skipped and the request fails naturally.</p>
+                                        <p>When enabled, blocks requests whose resolved IP falls within a private or reserved network range. **Only evaluated in `deny` mode** (after host and resolved-IP list validation) and when `mode` is absent. Has no effect in `allow` mode.</p>
                                     </div>
                                 </div>
                             </div>
