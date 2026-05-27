@@ -17257,8 +17257,8 @@ same_site_cookies = "lax"
                 <div class="superfences-content">
                     <div class="mb-config-example">
 <pre><code class="toml">[apim.network_security.access_control]
-mode = "allow"
-hosts = ["api.github.com", "*.wso2.com"]
+mode = "deny"
+hosts = ["*.internal", "localhost"]
 block_private_network_access = true</code></pre>
                     </div>
                 </div>
@@ -17280,6 +17280,9 @@ block_private_network_access = true</code></pre>
                                         <p>
                                             <span class="param-type string"> string </span>
                                         </p>
+                                        <div class="param-default">
+                                            <span class="param-default-value">Default: <code></code></span>
+                                        </div>
                                         <div class="param-possible">
                                             <span class="param-possible-values">Possible Values: <code>allow, deny</code></span>
                                         </div>
