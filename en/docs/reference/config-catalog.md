@@ -17288,7 +17288,7 @@ block_private_network_access = true</code></pre>
                                         </div>
                                     </div>
                                     <div class="param-description">
-                                        <p>Determines the base filtering behavior. `allow`: only hosts whose hostname or resolved IP matches the `hosts` list are permitted; all others are blocked. `deny`: hosts whose hostname or resolved IP matches the `hosts` list are blocked; all others are allowed (subject to `block_private_network_access`). If absent or blank, the `hosts` list is ignored and only `block_private_network_access` is applied.</p>
+                                        <p>Determines the base filtering behavior. <code>allow</code>: only hosts whose hostname or resolved IP matches the <code>hosts</code> list are permitted; all others are blocked. <code>deny</code>: hosts whose hostname or resolved IP matches the <code>hosts</code> list are blocked; all others are allowed (subject to <code>block_private_network_access</code>). If absent or blank, the <code>hosts</code> list is ignored and only <code>block_private_network_access</code> is applied.</p>
                                     </div>
                                 </div>
                             </div><div class="param">
@@ -17305,7 +17305,7 @@ block_private_network_access = true</code></pre>
                                         </div>
                                     </div>
                                     <div class="param-description">
-                                        <p>List of host patterns matched against the hostname in the request URL. If the hostname does not match, DNS is resolved and the resulting IPs are also checked against this list. Supports wildcard matching (e.g., `*.example.com`). Behavior depends on `mode`.</p>
+                                        <p>List of host patterns matched against the hostname in the request URL. If the hostname does not match, DNS is resolved and the resulting IPs are also checked against this list. Supports wildcard matching (e.g., <code>*.example.com</code>). Behavior depends on <code>mode</code>.</p>
                                     </div>
                                 </div>
                             </div><div class="param">
@@ -17325,7 +17325,7 @@ block_private_network_access = true</code></pre>
                                         </div>
                                     </div>
                                     <div class="param-description">
-                                        <p>When enabled, blocks requests whose resolved IP falls within a private or reserved network range. **Only evaluated in `deny` mode** (after host and resolved-IP list validation) and when `mode` is absent. Has no effect in `allow` mode.</p>
+                                        <p>When enabled, blocks requests whose resolved IP falls within a private or reserved network range. <strong>Only evaluated in <code>deny</code> mode</strong> (after host and resolved-IP list validation) and when <code>mode</code> is absent. Has no effect in <code>allow</code> mode.</p>
                                     </div>
                                 </div>
                             </div>
