@@ -22,6 +22,49 @@ Platform-level validation is activated automatically when the `[apim.network_sec
 
 ---
 
+## Validating Remote References in API Definitions
+
+In addition to top-level user URLs (endpoint, WSDL, and Key Manager URLs), the same access control policy also governs **remote references inside OpenAPI and Swagger definitions**.
+
+OpenAPI/Swagger documents can use `$ref` to point at other documents. When a definition is imported or validated, the server resolves these references — including references that are remote URLs, references nested transitively inside those remote documents, and references inside files bundled in an API archive (`.zip`). Without validation, an attacker could craft a definition whose `$ref` points at an internal or otherwise restricted host, causing the server to fetch it (an SSRF vector).
+
+To close this gap, the server now validates **every** remote `$ref` URL — recursing through the full transitive closure of references — using the **same** `network_security.access_control` policy described on this page. The same `mode`, `hosts`, and `block_private_network_access` semantics, and the same platform (`deployment.toml`) and tenant (`tenant-conf.json`) configuration, apply to embedded references exactly as they do to top-level URLs.
+
+!!! note
+    No additional configuration is required. Remote reference validation is enabled automatically whenever the `[apim.network_security.access_control]` block (and/or the tenant-level `NetworkSecurityAccessControl` configuration) is present. The same policy that protects top-level URLs protects embedded references.
+
+### Behavior
+
+When a definition is imported or validated:
+
+- Every remote `$ref` URL it contains is validated against the access control policy before any document is fetched.
+- The server recurses through nested and transitive references, validating each remote URL it discovers.
+- If **any** remote `$ref` points at a blocked destination — a private, loopback, link-local, or metadata address; a denied host; or a host that is not allow-listed in `allow` mode — the import or validation **fails** and the targeted document is never fetched.
+- A blocked reference returns **HTTP 400** with the message: `The provided URL is not trusted. Please contact the system administrator.`
+- A definition whose references are all clean (or that contains no remote references) validates and imports normally.
+
+### Covered Flows
+
+Remote reference validation applies to the following import and validation flows:
+
+| Flow | Endpoint / Operation |
+|------|----------------------|
+| Validate an OpenAPI definition | `POST /apis/validate-openapi` |
+| Import an OpenAPI definition | `POST /apis/import-openapi` |
+| Update an API's OpenAPI definition | `PUT /apis/{id}/swagger` |
+| MCP server from OpenAPI | MCP `validate-openapi` / `generate-from-openapi` |
+| API archive import | `.zip` / CTL (`apictl`) import |
+| Service catalog import | Service definition import (content and URL) |
+
+### Version Coverage
+
+Validation of remote references is applied uniformly across **OpenAPI 3.1**, **OpenAPI 3.0**, and **Swagger 2.0** definitions, regardless of whether the definition is supplied inline, by URL, or inside an archive.
+
+!!! note
+    AsyncAPI definitions and gateway runtime request routing are outside the scope of this feature.
+
+---
+
 ## Configuration
 
 ### Platform-Level Configuration
