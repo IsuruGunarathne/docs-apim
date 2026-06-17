@@ -82,6 +82,15 @@ You can define XML schemas per resource to validate each request. For example, t
 Each request is sanitized through the XML threat protector. API developer can modify each properties according to 
 your requirement.
 
+!!! warning "Network access control applies to schema URLs"
+    The `xsdURL` you configure, and any `xsd:import` / `xsd:include` / external DTD
+    references inside the fetched XSD, are fetched by the gateway at request time and are
+    subject to the network access-control policy
+    (`[apim.network_security.access_control]` and the tenant `NetworkSecurityAccessControl`
+    configuration). A schema URL — or a reference inside it — that points to a
+    non-allow-listed or private-network host is rejected and the request fails with HTTP
+    400. Only `http` and `https` schemes are permitted.
+
 ### Editing the sequence through registry artifacts
 
 To edit the existing sequence follow the steps below.
