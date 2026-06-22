@@ -39,6 +39,9 @@ You can use a combination of the threat protectors given above to validate the m
 </sequence>
 ```
 
+!!! note "Network access control applies to `xsdURL`"
+    The gateway fetches the configured `xsdURL` (and any nested `xsd:import`/`xsd:include`/external-DTD references inside it) at request time, subject to the [Network Security Access Control]({{base_path}}/administer/network-security-access-control/) policy. The `http://localhost:8000/...` value above is only an illustration — with `block_private_network_access` enabled, or in `allow` mode without that host allow-listed, a localhost or private-network schema URL is rejected with **HTTP 400**.
+
 ### Add a custom sequence
 
 You can add custom sequences depending on the threats that you need to address. You can create a policy using the custom sequence and attach it to the API. 

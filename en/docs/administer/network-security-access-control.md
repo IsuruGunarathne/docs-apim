@@ -4,7 +4,7 @@
 
 Outbound host validation is a security mechanism that controls which external hosts WSO2 API Manager is permitted to connect to, preventing unintended or unauthorized outbound requests to internal or external systems.
 
-In WSO2 API Manager, outbound requests such as endpoint validation, WSDL imports, and other internal HTTP calls are protected using configurable validation mechanisms.
+In WSO2 API Manager, outbound requests such as endpoint validation, WSDL imports, remote OpenAPI/Swagger `$ref` resolution, and the gateway's XML schema-validation `xsdURL` fetch are protected using configurable validation mechanisms.
 
 This feature allows administrators to control outbound traffic using platform-level and tenant-level configurations.
 
@@ -45,7 +45,7 @@ When a definition is imported or validated:
 
 ### Covered Flows
 
-Remote reference validation applies to the following import and validation flows:
+Remote reference validation applies to the following import-time and validation-time flows (the separate gateway request-time XML schema-validation path is covered in [Validating Gateway XML Schema URLs (xsdURL)](#validating-gateway-xml-schema-urls-xsdurl)):
 
 | Flow | Endpoint / Operation |
 |------|----------------------|
@@ -61,7 +61,31 @@ Remote reference validation applies to the following import and validation flows
 Validation of remote references is applied uniformly across **OpenAPI 3.1**, **OpenAPI 3.0**, and **Swagger 2.0** definitions, regardless of whether the definition is supplied inline, by URL, or inside an archive.
 
 !!! note
-    AsyncAPI definitions and gateway runtime request routing are outside the scope of this feature.
+    AsyncAPI definitions and the gateway's endpoint/backend request routing are outside the scope of this feature. The gateway XML schema-validation path (the `XMLSchemaValidator` mediator's `xsdURL` fetch) **is** covered by the same policy — see [Validating Gateway XML Schema URLs (xsdURL)](#validating-gateway-xml-schema-urls-xsdurl) below.
+
+---
+
+## Validating Gateway XML Schema URLs (xsdURL)
+
+The Universal Gateway's XML schema-validation policy (the `XMLSchemaValidator` mediator, enabled through the XML Validator operation policy with `schemaValidation` set to `true` and an `xsdURL`) fetches the publisher-configured `xsdURL` at **request time**, in the data plane, for non-`GET` requests whose `Content-Type` is `application/xml` or `text/xml`. If `xsdURL` is empty, nothing is fetched and nothing is gated.
+
+That schema fetch — together with any `xsd:import`, `xsd:include`, `xsd:redefine`, and external DTD references reached while compiling the fetched XSD — is governed by the **same** `network_security.access_control` policy described on this page. The same `mode`, `hosts`, and `block_private_network_access` semantics, and the same platform (`deployment.toml`) and tenant (`tenant-conf.json`) configuration apply: a host that is trusted for a `$ref` is trusted for an `xsdURL`. There is no separate XSD configuration.
+
+!!! note
+    No additional configuration is required. The gateway `xsdURL` fetch is governed automatically whenever the `[apim.network_security.access_control]` block (and/or the tenant-level `NetworkSecurityAccessControl` configuration) is present — the same policy that protects top-level URLs and embedded `$ref` references protects gateway schema URLs.
+
+### Behavior
+
+When the gateway validates a request against an XSD:
+
+- The top-level `xsdURL` is validated against the access control policy **before** the gateway fetches it. Only `http` and `https` schemes are accepted — a `file:`, `jar:`, `ftp:`, or schemeless reference is rejected.
+- Every nested `xsd:import`, `xsd:include`, `xsd:redefine`, and external DTD reached while compiling the schema is validated against the policy before it is fetched.
+- If the `xsdURL` — or any reference inside it — points at a blocked destination (a private, loopback, link-local, or metadata address; a denied host; or a host that is not allow-listed in `allow` mode), the request is rejected with **HTTP 400** and the schema is never fetched.
+- The request payload (the attacker-controlled body) is parsed with all external entity, DTD, and schema resolution disabled, so the payload itself can never trigger an outbound fetch.
+
+A blocked top-level `xsdURL` returns **HTTP 400** with a message such as `The provided XSD URL is not trusted: <url>` (or `The provided XSD URL is not trusted (only HTTP/HTTPS is allowed): <url>` when a non-HTTP(S) scheme is used); a blocked reference inside the XSD returns `Blocked XSD reference not permitted by the network access-control policy: <url>`.
+
+For details on configuring the XML schema-validation policy, see [XML Threat Protection for Universal Gateway]({{base_path}}/api-gateway/threat-protectors/xml-threat-protection-for-api-gateway/).
 
 ---
 
