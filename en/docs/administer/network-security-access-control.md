@@ -4,7 +4,7 @@
 
 Outbound host validation is a security mechanism that controls which external hosts WSO2 API Manager is permitted to connect to, preventing unintended or unauthorized outbound requests to internal or external systems.
 
-In WSO2 API Manager, outbound requests such as endpoint validation, WSDL imports, remote OpenAPI/Swagger `$ref` resolution, and the gateway's XML schema-validation `xsdURL` fetch are protected using configurable validation mechanisms.
+In WSO2 API Manager, outbound requests such as endpoint validation, WSDL imports, remote OpenAPI/Swagger `$ref` resolution, the gateway's XML schema-validation `xsdURL` fetch, and administrative connection URLs (secondary user-store and event-publisher configurations) are protected using configurable validation mechanisms.
 
 This feature allows administrators to control outbound traffic using platform-level and tenant-level configurations.
 
@@ -86,6 +86,35 @@ When the gateway validates a request against an XSD:
 A blocked top-level `xsdURL` returns **HTTP 400** with a message such as `The provided XSD URL is not trusted: <url>` (or `The provided XSD URL is not trusted (only HTTP/HTTPS is allowed): <url>` when a non-HTTP(S) scheme is used); a blocked reference inside the XSD returns `Blocked XSD reference not permitted by the network access-control policy: <url>`.
 
 For details on configuring the XML schema-validation policy, see [XML Threat Protection for Universal Gateway]({{base_path}}/api-gateway/threat-protectors/xml-threat-protection-for-api-gateway/).
+
+---
+
+## Validating Admin-Configured Connection URLs
+
+Beyond import-time definitions and gateway schema fetches, the same access control policy also governs **outbound connections opened by administrative configuration operations** — secondary user-store connections and event-publisher output adapters. These are management-plane operations: an administrator supplies a connection URL (through the management console or the corresponding admin service), and the server opens a real connection to whatever host it names. Without validation, an administrator-supplied URL could be pointed at an internal or otherwise restricted host — an SSRF vector through a privileged operation.
+
+Both flows are governed by the **same** `network_security.access_control` policy described on this page — the same `mode`, `hosts`, and `block_private_network_access` semantics, and the same platform (`deployment.toml`) and tenant (`tenant-conf.json`) configuration. Each host in a multi-host value (a JDBC failover list, a broker list, or a failover endpoint set) is validated independently; if **any** host is blocked, the whole operation is refused.
+
+!!! note
+    No additional configuration is required. These operations are governed automatically whenever the `[apim.network_security.access_control]` block (and/or the tenant-level `NetworkSecurityAccessControl` configuration) is present. When the policy block is absent, these operations behave exactly as before.
+
+### Secondary User-Store Connections
+
+When an administrator **tests** or **saves** a JDBC secondary user store (the connection URL supplied through the management console or the user-store configuration admin service), the configured database connection URL is validated against the policy **before** any JDBC socket is opened. This covers both the *Test Connection* action **and** the add/update of the user store — so a blocked host cannot be persisted into a user-store configuration and then connected to afterward.
+
+- If the connection URL's host is blocked (a private, loopback, link-local, or metadata address; a denied host; or a host that is not allow-listed in `allow` mode), the operation fails and no connection is attempted.
+- An allowed host passes the gate and proceeds to the JDBC driver as usual (then succeeds or fails on normal database connectivity).
+
+See also [Configuring Secondary User Stores]({{base_path}}/administer/managing-users-and-roles/managing-user-stores/configuring-secondary-user-stores/).
+
+### Event-Publisher Output Adapters
+
+When an administrator **tests**, **deploys**, or **publishes through** an event publisher whose output adapter carries a remote URL — for example an HTTP (`http.url`), SOAP (`url`), JMS (`java.naming.provider.url`), or WSO2-event (`receiverURL` / `authenticatorURL`) adapter — the adapter's URL host(s) are validated against the policy **before** the connection is opened. The check applies to the *Test Connection* action, to deploying the publisher configuration, and to each outbound publish.
+
+- If an adapter URL host is blocked, the test/deploy/publish is refused before any outbound connection is made.
+- An allowed host passes the gate and connects as usual.
+
+A blocked user-store or event-publisher operation surfaces the policy decision as an operation fault — `Outbound request blocked by network security access control policy.` — and the server log records the offending host: `Outbound request to host '<host>' blocked by network security access control policy.`
 
 ---
 
